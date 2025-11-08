@@ -5,11 +5,14 @@ from .model import Summarizer, SummaryOut
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="AI Document Summarizer", version="0.1.0")
-app.mount(
-    "/ui",
-    StaticFiles(directory="src/nlp/summarizer/ui", html=True),
-    name="ui",
-)
+# anchor the UI directory to this file's folder to avoid CWD issues
+UI_DIR = Path(__file__).resolve().parent / "ui"
+app.mount("/ui", StaticFiles(directory=str(UI_DIR), html=True), name="ui")
+
+@app.get("/")
+def root():
+    # convenience: visiting "/" sends you to the UI
+    return RedirectResponse(url="/ui/")
 
 # single global model instance
 _sm = Summarizer(
