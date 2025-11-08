@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Document Summarizer</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header>
+    <h1>AI Document Summarizer</h1>
+    <p>Paste text. Tune parameters. Get a concise summary.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <label for="inputText">Input text</label>
+      <textarea id="inputText" rows="10" placeholder="Paste a few paragraphs..."></textarea>
+
+      <div class="grid">
+        <div class="field">
+          <label for="minNew">Min new tokens</label>
+          <input id="minNew" type="number" min="8" max="256" value="32" />
+        </div>
+        <div class="field">
+          <label for="maxNew">Max new tokens</label>
+          <input id="maxNew" type="number" min="16" max="512" value="128" />
+        </div>
+        <div class="field">
+          <label for="temp">Temperature <span id="tempVal">0.7</span></label>
+          <input id="temp" type="range" min="0.1" max="1.5" step="0.1" value="0.7" />
+        </div>
+      </div>
+
+      <button id="summarizeBtn">Summarize</button>
+      <div id="status" class="status"></div>
+    </section>
+
+    <section class="card">
+      <div class="row">
+        <h2>Summary</h2>
+        <button id="copyBtn" class="secondary">Copy</button>
+      </div>
+      <pre id="output" class="output"></pre>
+      <div class="meta">
+        <span id="latency">Latency: —</span>
+        <span id="tokens">Tokens: —</span>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <a href="/docs" target="_blank">API Docs</a>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
