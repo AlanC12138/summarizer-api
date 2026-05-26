@@ -1,0 +1,25 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+
+# Git
+.git/
+.gitignore
+
+# Tests & local artifacts
+.pytest_cache/
+.coverage
+
+# Editors
+.vscode/
+
+# Logs & temp
+*.log
+tmp/
+data/

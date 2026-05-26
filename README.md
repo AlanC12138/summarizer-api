@@ -1,153 +1,116 @@
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![Python](https://img.shields.io/badge/python-3.11-blue.svg?style=for-the-badge&logo=python)
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
-![Status](https://img.shields.io/badge/status-active-success?style=for-the-badge)
+# summarizer_api
 
-```markdown
-# AI Document Summarizer
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=flat&logo=fastapi&logoColor=white)
+![HuggingFace](https://img.shields.io/badge/HuggingFace-Transformers-FFD21E?style=flat&logo=huggingface&logoColor=black)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=flat&logo=docker&logoColor=white)
 
-End-to-end NLP module: model inference (BART/T5), FastAPI service, Docker packaging, and basic evaluation.
+FastAPI service wrapping BART-Large (and any compatible Hugging Face seq2seq model) for configurable text summarization. Features GPU/CPU auto-detection, token truncation, latency tracking, and a vanilla JS UI served as static files.
 
-## Features
-- Pretrained abstractive summarization (Hugging Face `transformers`)
-- FastAPI endpoints: `/health`, `/summarize`
-- Batch + single text support
-- Deterministic runs (`seed`), CPU/GPU compatible
-- Dockerized deployment
+---
 
-## Project layout
-```
+## Quick Start
 
-src/nlp/summarizer/
-├── api.py                # FastAPI app
-├── model.py              # model wrapper (load/run)
-├── requirements.txt      # module deps
-├── Dockerfile            # service image
-├── README.md
-└── tests/
-└── test_smoke.py
-
-````
-
-## Quickstart (local)
-```bash
-# from repo root
-python -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\activate
-pip install -r src/nlp/summarizer/requirements.txt
-
-# run API
-uvicorn src.nlp.summarizer.api:app --host 0.0.0.0 --port 8000 --reload
-````
-
-## API
-
-### Health
-
-```
-GET /health  ->  {"status":"ok"}
-```
-
-### Summarize
-
-```
-POST /summarize
-{
-  "text": "long article text ...",
-  "max_new_tokens": 128,
-  "min_new_tokens": 32,
-  "temperature": 0.7
-}
-```
-
-Response:
-
-```
-{"summary": "concise summary...","tokens": 116,"latency_ms": 245}
-```
-
-cURL:
+### Docker (recommended)
 
 ```bash
-curl -s -X POST http://localhost:8000/summarize \
- -H "Content-Type: application/json" \
- -d '{"text":"<long text here>","max_new_tokens":128,"min_new_tokens":32}'
-```
+docker build -t summarizer:latest .
 
-## Python usage
-
-```python
-from src.nlp.summarizer.model import Summarizer
-
-sm = Summarizer(model_name="facebook/bart-large-cnn", device="auto", seed=42)
-out = sm.summarize("your long text", max_new_tokens=128, min_new_tokens=32)
-print(out.text, out.tokens, out.latency_ms)
-```
-
-## Configuration
-
-Environment variables (optional):
-
-```
-MODEL_NAME=facebook/bart-large-cnn   # or t5-small, google/pegasus-xsum, etc.
-DEVICE=auto                          # auto | cpu | cuda
-SEED=42
-MAX_INPUT_TOKENS=2048
-```
-
-## Docker
-
-```bash
-# build
-docker build -t summarizer:latest -f src/nlp/summarizer/Dockerfile .
-
-# run
 docker run --rm -p 8000:8000 \
   -e MODEL_NAME=facebook/bart-large-cnn \
   -e DEVICE=auto \
   summarizer:latest
 ```
 
-## Requirements
+The server downloads the model on first run (~1.6 GB). Open `http://localhost:8000` for the UI.
 
-```
-torch>=2.2
-transformers>=4.41
-accelerate>=0.30
-fastapi>=0.111
-uvicorn[standard]>=0.30
-pydantic>=2.7
-```
+> **GPU:** swap the base image for `nvidia/cuda:12.1.0-runtime-ubuntu22.04` and set `DEVICE=cuda`.
 
-## Evaluation (optional)
-
-Use CNN/DailyMail or a custom set. Log ROUGE and latency.
-
-```
-src/results/summarizer_metrics.md
-| model                    | rouge1 | rougeL | avg_latency_ms | notes |
-|--------------------------|--------|--------|----------------|-------|
-| bart-large-cnn (cpu)     |  -     |   -    |        -       | seed=42
-| bart-large-cnn (cuda)    |  -     |   -    |        -       | A100/T4/RTX3060
-```
-
-Run example:
+### Local (no Docker)
 
 ```bash
-python -m src.nlp.summarizer.model --eval_file data/sample_articles.jsonl --limit 100
+pip install -r requirements.txt
+uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-`sample_articles.jsonl` format: one JSON per line with `{"text": "...", "summary": "..."}`.
+---
 
-## Tests
+## API Reference
+
+### `GET /health`
+
+```
+200 OK
+{"status": "ok"}
+```
+
+### `POST /summarize`
+
+**Request**
+
+```json
+{
+  "text": "Your long document text here...",
+  "max_new_tokens": 128,
+  "min_new_tokens": 32,
+  "temperature": 1.0
+}
+```
+
+| Field            | Type    | Default | Description                              |
+|------------------|---------|---------|------------------------------------------|
+| `text`           | string  | —       | Input text to summarize (required)       |
+| `max_new_tokens` | int     | `128`   | Max tokens in the generated summary      |
+| `min_new_tokens` | int     | `32`    | Min tokens in the generated summary      |
+| `temperature`    | float   | `1.0`   | Sampling temperature (1.0 = deterministic for BART) |
+
+**Response**
+
+```json
+{
+  "summary": "Concise summary of the input text.",
+  "tokens": 116,
+  "latency_ms": 245
+}
+```
+
+**Example curl**
 
 ```bash
-pytest -q src/nlp/summarizer/tests/test_smoke.py
+curl -s -X POST http://localhost:8000/summarize \
+  -H "Content-Type: application/json" \
+  -d '{"text": "The tower is 324 metres tall, about the same height as an 81-storey building. Its base is square, measuring 125 metres on each side. During its construction, the Eiffel Tower surpassed the Washington Monument to become the tallest man-made structure in the world.", "max_new_tokens": 64, "min_new_tokens": 16}'
 ```
 
-## Roadmap
+---
 
-* Streaming endpoint (`/summarize/stream`)
-* Batch endpoint (`/summarize/batch`)
-* Quantization (bitsandbytes / torch.compile)
-* Simple web UI (FastAPI + HTML)
+## Configuration
+
+All options are set via environment variables (copy `.env.example` to `.env`):
+
+| Variable           | Default                      | Description                                   |
+|--------------------|------------------------------|-----------------------------------------------|
+| `MODEL_NAME`       | `facebook/bart-large-cnn`    | Any HF seq2seq model (T5, PEGASUS, etc.)      |
+| `DEVICE`           | `auto`                       | `auto` (GPU if available), `cpu`, or `cuda`   |
+| `MAX_INPUT_TOKENS` | `2048`                       | Input truncation limit (avoids OOM on long docs) |
+| `SEED`             | `42`                         | Random seed for reproducible outputs           |
+
+---
+
+## Project Structure
+
+```
+summarizer_api/
+├── api.py           # FastAPI app — endpoints, static UI mount
+├── model.py         # Summarizer class — model loading and inference
+├── requirements.txt
+├── Dockerfile
+├── .env.example
+└── ui/
+    ├── index.html   # Vanilla JS frontend
+    ├── app.js
+    └── styles.css
+```
+
+---
 

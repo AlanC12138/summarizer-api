@@ -49,3 +49,7 @@ Thumbs.db
 # FastAPI / Uvicorn
 *.sqlite
 *.db.sqlite
+
+# HuggingFace model cache (if HF_HOME is set to a local dir)
+hf_cache/
+.cache/

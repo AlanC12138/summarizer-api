@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
-from .model import Summarizer, SummaryOut
+from model import Summarizer, SummaryOut
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from pathlib import Path
